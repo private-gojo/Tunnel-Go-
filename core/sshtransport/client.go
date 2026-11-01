@@ -14,7 +14,13 @@ type Client struct {
 	conn *ssh.Client
 }
 
+type ContextDialer func(context.Context, string, string) (net.Conn, error)
+
 func Connect(ctx context.Context, cfg Config) (*Client, error) {
+	return ConnectVia(ctx, cfg, nil)
+}
+
+func ConnectVia(ctx context.Context, cfg Config, dial ContextDialer) (*Client, error) {
 	host, port, err := net.SplitHostPort(cfg.Address)
 	if err != nil || host == "" {
 		return nil, fmt.Errorf("SSH address must be host:port")
@@ -32,8 +38,13 @@ func Connect(ctx context.Context, cfg Config) (*Client, error) {
 	if timeout <= 0 {
 		timeout = 15 * time.Second
 	}
-	dialer := net.Dialer{Timeout: timeout, KeepAlive: 30 * time.Second}
-	raw, err := dialer.DialContext(ctx, "tcp", cfg.Address)
+	var raw net.Conn
+	if dial == nil {
+		dialer := net.Dialer{Timeout: timeout, KeepAlive: 30 * time.Second}
+		raw, err = dialer.DialContext(ctx, "tcp", cfg.Address)
+	} else {
+		raw, err = dial(ctx, "tcp", cfg.Address)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("dial SSH server: %w", err)
 	}
