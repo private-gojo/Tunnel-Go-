@@ -18,7 +18,7 @@ var state struct {
 }
 
 // StartSSH connects to an SSH endpoint and exposes it as a local SOCKS5 proxy.
-func StartSSH(address, username, password, privateKey, privateKeyPassphrase, knownHostsPath, proxyAddress, serverName, payloadText, splitMode string, useTLS, insecureTLS, insecureSSH, waitForHTTPResponse bool, localPort int) error {
+func StartSSH(address, username, password, privateKey, privateKeyPassphrase, knownHostsPath, proxyAddress, serverName, payloadText, splitMode string, useTLS, insecureTLS, insecureSSH, waitForHTTPResponse bool, localPort int32) error {
 	state.Lock()
 	defer state.Unlock()
 	if state.cancel != nil {
