@@ -18,7 +18,7 @@ import (
 )
 
 func TestSSHHandshakeThroughHTTPConnectProxy(t *testing.T) {
-	serverKey, _, err := ed25519.GenerateKey(rand.Reader)
+	_, serverKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		t.Fatal(err)
 	}
