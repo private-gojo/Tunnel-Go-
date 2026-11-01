@@ -134,8 +134,7 @@ func writeFragments(w io.Writer, value, mode string) error {
 }
 
 func readHTTPResponse(conn net.Conn) error {
-	reader := bufio.NewReaderSize(conn, 4096)
-	line, err := reader.ReadString('\n')
+	line, err := readHTTPLine(conn)
 	if err != nil {
 		return fmt.Errorf("read proxy status: %w", err)
 	}
@@ -148,7 +147,7 @@ func readHTTPResponse(conn net.Conn) error {
 		return fmt.Errorf("proxy rejected tunnel: %s", strings.TrimSpace(line))
 	}
 	for {
-		line, err = reader.ReadString('\n')
+		line, err = readHTTPLine(conn)
 		if err != nil {
 			return fmt.Errorf("read proxy headers: %w", err)
 		}
