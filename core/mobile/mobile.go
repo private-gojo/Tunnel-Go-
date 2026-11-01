@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strings"
 	"sync"
 
 	"github.com/private-gojo/Tunnel-Go-/core/sshtransport"
@@ -29,6 +30,11 @@ func StartSSH(address, username, password, privateKey, privateKeyPassphrase, kno
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
+	if splitMode == "" && strings.Contains(payloadText, "[delay_split]") {
+		splitMode = "delay_split"
+	} else if splitMode == "" && strings.Contains(payloadText, "[split]") {
+		splitMode = "split"
+	}
 	cfg := sshtransport.Config{
 		Address: address,
 		Username: username,
