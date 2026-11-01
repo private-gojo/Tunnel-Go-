@@ -1,7 +1,6 @@
 package transport
 
 import (
-	"bufio"
 	"context"
 	"crypto/tls"
 	"fmt"
@@ -87,7 +86,7 @@ func (d *Dialer) DialContext(ctx context.Context, network, target string) (net.C
 		if err := writeFragments(conn, request, d.SplitMode); err != nil {
 			return fail(fmt.Errorf("write payload: %w", err))
 		}
-	} else if d.ProxyAddress != "" || d.UseTLS {
+	} else if d.ProxyAddress != "" {
 		request := fmt.Sprintf("CONNECT %s:%s HTTP/1.1\r\nHost: %s:%s\r\n\r\n", host, portText, host, portText)
 		if _, err := io.WriteString(conn, request); err != nil {
 			return fail(fmt.Errorf("write HTTP CONNECT: %w", err))
@@ -157,4 +156,19 @@ func readHTTPResponse(conn net.Conn) error {
 			return nil
 		}
 	}
+}
+
+func readHTTPLine(r io.Reader) (string, error) {
+	var line []byte
+	var one [1]byte
+	for len(line) < 8192 {
+		if _, err := io.ReadFull(r, one[:]); err != nil {
+			return "", err
+		}
+		if one[0] == '\n' {
+			return string(line), nil
+		}
+		line = append(line, one[0])
+	}
+	return "", fmt.Errorf("HTTP response line exceeds limit")
 }
