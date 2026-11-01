@@ -19,10 +19,19 @@ func ServeSOCKS5(ctx context.Context, listener net.Listener, upstream Dialer) er
 	if listener == nil || upstream == nil {
 		return fmt.Errorf("listener and upstream dialer are required")
 	}
-	stop := context.AfterFunc(ctx, func() { _ = listener.Close() })
+	var workers sync.WaitGroup
+	var activeMu sync.Mutex
+	active := make(map[net.Conn]struct{})
+	stop := context.AfterFunc(ctx, func() {
+		_ = listener.Close()
+		activeMu.Lock()
+		for conn := range active {
+			_ = conn.Close()
+		}
+		activeMu.Unlock()
+	})
 	defer stop()
 
-	var workers sync.WaitGroup
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
@@ -32,9 +41,17 @@ func ServeSOCKS5(ctx context.Context, listener net.Listener, upstream Dialer) er
 			}
 			return err
 		}
+		activeMu.Lock()
+		active[conn] = struct{}{}
+		activeMu.Unlock()
 		workers.Add(1)
 		go func() {
 			defer workers.Done()
+			defer func() {
+				activeMu.Lock()
+				delete(active, conn)
+				activeMu.Unlock()
+			}()
 			handleSOCKS5(conn, upstream)
 		}()
 	}
