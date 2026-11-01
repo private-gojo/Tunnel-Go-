@@ -83,7 +83,7 @@ func handleSOCKS5(client net.Conn, upstream Dialer) {
 	}
 
 	request := make([]byte, 4)
-	if _, err := io.ReadFull(client, request); err != nil || request[0] != 5 || request[1] != 1 || request[2] != 0 {
+	if _, err := io.ReadFull(client, request); err != nil || request[0] != 5 || request[2] != 0 || (request[1] != 1 && request[1] != 3) {
 		writeSOCKSReply(client, 7)
 		return
 	}
@@ -121,7 +121,12 @@ func handleSOCKS5(client net.Conn, upstream Dialer) {
 	if _, err := io.ReadFull(client, portBytes); err != nil {
 		return
 	}
-	target := net.JoinHostPort(host, strconv.Itoa(int(binary.BigEndian.Uint16(portBytes))))
+	targetPort := int(binary.BigEndian.Uint16(portBytes))
+	if request[1] == 3 {
+		serveSOCKS5UDP(client, upstream)
+		return
+	}
+	target := net.JoinHostPort(host, strconv.Itoa(targetPort))
 	remote, err := upstream.Dial("tcp", target)
 	if err != nil {
 		writeSOCKSReply(client, 5)
