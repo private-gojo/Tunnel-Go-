@@ -8,6 +8,14 @@ plugins {
 val hevAar = layout.projectDirectory.file("libs/hev-socks5-tunnel.aar")
 val coreAar = layout.projectDirectory.file("libs/tunnelcore.aar")
 
+val verifyCoreAar by tasks.registering {
+    doLast {
+        check(coreAar.asFile.isFile) {
+            "Missing app/libs/tunnelcore.aar. Run scripts/build-android.sh first."
+        }
+    }
+}
+
 val downloadHevAar by tasks.registering {
     outputs.file(hevAar)
     doLast {
@@ -22,13 +30,7 @@ val downloadHevAar by tasks.registering {
 
 tasks.named("preBuild").configure {
     dependsOn(downloadHevAar)
-    dependsOn(tasks.register("verifyCoreAar") {
-        doLast {
-            check(coreAar.asFile.isFile) {
-                "Missing app/libs/tunnelcore.aar. Run scripts/build-android.sh first."
-            }
-        }
-    })
+    dependsOn(verifyCoreAar)
 }
 
 android {
