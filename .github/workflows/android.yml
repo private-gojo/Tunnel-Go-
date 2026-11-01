@@ -24,26 +24,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
-
       - uses: actions/setup-go@v5
         with:
           go-version: "1.23.x"
-
       - uses: android-actions/setup-android@v3
-
+        with:
+          packages: platform-tools
       - name: Install Android SDK and NDK
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "ndk;27.2.12479018"
-
       - name: Build Go Android library
         working-directory: core
-        env:
-          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
         run: |
+          export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/27.2.12479018"
           go get golang.org/x/mobile@latest
           go install golang.org/x/mobile/cmd/gomobile@latest
           go install golang.org/x/mobile/cmd/gobind@latest
@@ -51,14 +47,11 @@ jobs:
           gomobile init
           mkdir -p ../app/libs
           gomobile bind -target=android -androidapi 24 -javapkg=dev.kyouji.tunnelgo -o ../app/libs/tunnelcore.aar ./mobile
-
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.11.1"
-
       - name: Assemble debug APK
         run: gradle :app:assembleDebug
-
       - uses: actions/upload-artifact@v4
         with:
           name: tunnel-go-debug-apk
